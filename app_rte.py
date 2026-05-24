@@ -961,65 +961,368 @@ def export_synthese_docx(df):
 def apply_custom_css():
     st.markdown("""
     <style>
-    .stApp {
-        background-color: #FAFAFA;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Crimson+Pro:wght@600;700&display=swap');
+
+    /* === BASE === */
+    html, body, .stApp, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }
+    .stApp {
+        background: linear-gradient(180deg, #F7F8FC 0%, #EEF2F8 100%);
+        background-attachment: fixed;
+    }
+    .block-container {
+        padding-top: 2rem !important;
+        max-width: 1200px;
+    }
+
+    /* === TYPO === */
+    h1, h2, h3 {
+        font-family: 'Inter', sans-serif !important;
+        color: #0F2A47 !important;
+        letter-spacing: -0.02em !important;
+    }
+    h1 { font-weight: 800 !important; }
+    h2 { font-weight: 700 !important; }
+    h3 { font-weight: 600 !important; }
+
+    /* === HERO === */
+    .hero {
+        background: linear-gradient(135deg, #0F2A47 0%, #1F4E79 50%, #2A6AAA 100%);
+        padding: 36px 40px;
+        border-radius: 20px;
+        margin-bottom: 28px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 50px -20px rgba(15, 42, 71, 0.4);
+    }
+    .hero::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(225, 182, 96, 0.25) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+    .hero-tag {
+        display: inline-block;
+        background: rgba(225, 182, 96, 0.2);
+        color: #E1B660;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+        border: 1px solid rgba(225, 182, 96, 0.3);
+    }
+    .hero-title {
+        font-size: 36px;
+        font-weight: 800;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+    }
+    .hero-subtitle {
+        font-size: 16px;
+        opacity: 0.85;
+        font-weight: 400;
+        margin: 0;
+        max-width: 700px;
+        line-height: 1.6;
+    }
+    .hero-meta {
+        margin-top: 20px;
+        display: flex;
+        gap: 32px;
+        flex-wrap: wrap;
+    }
+    .hero-meta-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .hero-meta-val {
+        font-size: 24px;
+        font-weight: 700;
+        color: #E1B660;
+    }
+    .hero-meta-lbl {
+        font-size: 11px;
+        opacity: 0.8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    /* === AXE BANNER === */
     .axe-banner {
-        padding: 12px 20px;
-        border-radius: 8px;
-        margin: 20px 0 10px 0;
+        padding: 14px 22px;
+        border-radius: 12px;
+        margin: 32px 0 18px 0;
         color: white;
         font-weight: 700;
-        font-size: 18px;
+        font-size: 16px;
+        letter-spacing: 0.02em;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.15);
     }
+    .axe-banner .axe-num {
+        background: rgba(255, 255, 255, 0.25);
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        backdrop-filter: blur(4px);
+    }
+
+    /* === CRITERE CARD === */
+    .crit-card {
+        background: #FFFFFF;
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin-bottom: 14px;
+        border: 1px solid #E5E9F0;
+        box-shadow: 0 1px 3px rgba(15, 42, 71, 0.04);
+        transition: box-shadow 0.2s;
+    }
+    .crit-card:hover {
+        box-shadow: 0 8px 24px -8px rgba(15, 42, 71, 0.12);
+    }
+    .crit-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
+    }
+    .crit-id {
+        background: #0F2A47;
+        color: #FFF;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+    }
+    .crit-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0F2A47;
+    }
+    .crit-hint {
+        font-size: 12px;
+        color: #7D8B96;
+        margin: 8px 0 14px 0;
+        padding: 8px 12px;
+        background: #F7F8FC;
+        border-left: 3px solid #E1B660;
+        border-radius: 4px;
+    }
+
+    /* === KPI === */
     .kpi {
         background: white;
-        padding: 16px;
-        border-radius: 8px;
+        padding: 22px 18px;
+        border-radius: 14px;
         text-align: center;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 6px rgba(15, 42, 71, 0.06);
+        border: 1px solid #E5E9F0;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .kpi:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px -6px rgba(15, 42, 71, 0.15);
     }
     .kpi-val {
-        font-size: 32px;
+        font-size: 36px;
         font-weight: 800;
-        color: #1F4E79;
+        color: #0F2A47;
+        line-height: 1;
+        letter-spacing: -0.03em;
     }
     .kpi-lbl {
-        font-size: 12px;
-        color: #6B7280;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .q-row {
-        background: white;
-        padding: 12px;
-        border-radius: 6px;
-        margin-bottom: 8px;
-        border-left: 3px solid #1F4E79;
-    }
-    .q-id {
-        font-weight: 700;
-        color: #1F4E79;
         font-size: 11px;
+        color: #7D8B96;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-top: 8px;
+        font-weight: 600;
     }
-    .q-label {
-        color: #1A1A1A;
+    .kpi-accent { color: #E1B660; }
+    .kpi-success { color: #2D7A65; }
+    .kpi-danger { color: #B53B3B; }
+
+    /* === RADIO BUTTONS === */
+    div[data-testid="stRadio"] > label > div > p {
+        font-size: 13px;
+        color: #2C3E50;
+    }
+    div[data-testid="stRadio"] label {
+        background: transparent;
+        margin-bottom: 2px !important;
+    }
+
+    /* === TEXT INPUTS === */
+    .stTextInput input, .stTextArea textarea {
+        border-radius: 10px !important;
+        border: 1px solid #D7DEE8 !important;
+        background: #FFFFFF !important;
+        font-size: 13px !important;
+        transition: border-color 0.15s, box-shadow 0.15s !important;
+    }
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #1F4E79 !important;
+        box-shadow: 0 0 0 3px rgba(31, 78, 121, 0.12) !important;
+    }
+
+    /* === BUTTONS === */
+    .stButton button, .stDownloadButton button, .stFormSubmitButton button {
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.02em !important;
+        transition: all 0.15s !important;
+        border: none !important;
+    }
+    .stButton button[kind="primary"], .stDownloadButton button[kind="primary"],
+    .stFormSubmitButton button {
+        background: linear-gradient(135deg, #1F4E79 0%, #2A6AAA 100%) !important;
+        color: white !important;
+        box-shadow: 0 4px 12px -2px rgba(31, 78, 121, 0.35) !important;
+    }
+    .stButton button[kind="primary"]:hover, .stDownloadButton button[kind="primary"]:hover,
+    .stFormSubmitButton button:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 8px 20px -4px rgba(31, 78, 121, 0.45) !important;
+    }
+
+    /* === SIDEBAR === */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0F2A47 0%, #1A3A5C 100%) !important;
+    }
+    section[data-testid="stSidebar"] .stMarkdown,
+    section[data-testid="stSidebar"] [data-testid="stMetricLabel"],
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] p {
+        color: #E5E9F0 !important;
+    }
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #FFFFFF !important;
+    }
+    section[data-testid="stSidebar"] [data-testid="stMetricValue"] {
+        color: #E1B660 !important;
+        font-weight: 800;
+    }
+    section[data-testid="stSidebar"] hr {
+        border-color: rgba(255, 255, 255, 0.12) !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label p {
+        color: #E5E9F0 !important;
         font-size: 14px;
     }
-    .crit-score {
-        background: #F4F6F8;
-        padding: 10px 16px;
-        border-radius: 6px;
-        margin-top: 12px;
-        font-weight: 600;
-        color: #1F4E79;
-        text-align: center;
-    }
+
+    /* === PROGRESS BAR === */
     .stProgress > div > div > div > div {
-        background-color: #1F4E79;
+        background: linear-gradient(90deg, #1F4E79 0%, #E1B660 100%) !important;
     }
-    div[data-testid="stRadio"] > label > div > p {
-        font-size: 12px;
+
+    /* === TABLES === */
+    .stDataFrame {
+        border-radius: 12px !important;
+        overflow: hidden !important;
+        box-shadow: 0 1px 3px rgba(15, 42, 71, 0.06);
+    }
+
+    /* === EXPANDERS === */
+    div[data-testid="stExpander"] {
+        background: #FFFFFF;
+        border: 1px solid #E5E9F0 !important;
+        border-radius: 12px !important;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(15, 42, 71, 0.04);
+        margin-bottom: 12px;
+    }
+    div[data-testid="stExpander"] summary {
+        font-weight: 600 !important;
+        color: #0F2A47 !important;
+        padding: 14px 18px !important;
+    }
+    div[data-testid="stExpander"] summary:hover {
+        background: #F7F8FC;
+    }
+
+    /* === ALERTS === */
+    div[data-testid="stAlert"] {
+        border-radius: 12px !important;
+        border: none !important;
+    }
+
+    /* === SCORE BADGE === */
+    .score-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #1F4E79 0%, #2A6AAA 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.02em;
+        box-shadow: 0 3px 8px -2px rgba(31, 78, 121, 0.3);
+    }
+
+    /* === QUESTION ROW === */
+    .question-block {
+        background: #FAFBFD;
+        border: 1px solid #EAEFF5;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+    }
+    .q-id-tag {
+        display: inline-block;
+        background: #0F2A47;
+        color: #FFF;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-right: 8px;
+        font-family: 'Inter', monospace;
+    }
+    .q-text {
+        color: #2C3E50;
+        font-size: 13.5px;
+        line-height: 1.5;
+    }
+
+    /* === DIVIDER === */
+    .section-divider {
+        text-align: center;
+        margin: 32px 0 18px 0;
+        position: relative;
+    }
+    .section-divider::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0; right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #D7DEE8, transparent);
+    }
+    .section-divider span {
+        background: #F7F8FC;
+        padding: 0 18px;
+        color: #7D8B96;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-weight: 600;
+        position: relative;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -1030,39 +1333,59 @@ def apply_custom_css():
 # ============================================================
 
 def page_formulaire():
-    st.title("📝 Remplir la grille de maturite RTE")
-    st.markdown(
-        "**Mode d'emploi** : pour chaque question, indique si la pratique est "
-        "**Observee** (clairement en place), **Partielle** (en cours ou incomplete) "
-        "ou **Non observee** (absente). Si tu peux, ajoute une **preuve** "
-        "(document, exemple, source). Les scores se calculent automatiquement."
-    )
-    st.markdown(
-        "**Notation auto** : ✅ Observe = 1 pt · 🟡 Partiel = 0,5 pt · ❌ Non observe = 0 pt · "
-        "Score critere = (moyenne / nb questions) × 4."
-    )
+    # Hero header
+    nb_questions_total = sum(len(items) for items in CHECKLISTS.values())
+    st.markdown(f"""
+    <div class='hero'>
+        <div class='hero-tag'>Grille de maturite RTE · Modele V4</div>
+        <h1 class='hero-title'>Evaluation collaborative de la maturite RTE</h1>
+        <p class='hero-subtitle'>
+            Pour chaque question, indiquez si la pratique est <b>Observee</b>,
+            <b>Partielle</b> ou <b>Non observee</b>, et ajoutez une preuve quand vous pouvez.
+            La notation se calcule automatiquement.
+        </p>
+        <div class='hero-meta'>
+            <div class='hero-meta-item'>
+                <span class='hero-meta-val'>5</span>
+                <span class='hero-meta-lbl'>Axes</span>
+            </div>
+            <div class='hero-meta-item'>
+                <span class='hero-meta-val'>{TOTAL_CRITERES}</span>
+                <span class='hero-meta-lbl'>Criteres</span>
+            </div>
+            <div class='hero-meta-item'>
+                <span class='hero-meta-val'>{nb_questions_total}</span>
+                <span class='hero-meta-lbl'>Questions</span>
+            </div>
+            <div class='hero-meta-item'>
+                <span class='hero-meta-val'>15-30</span>
+                <span class='hero-meta-lbl'>Minutes</span>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.subheader("👤 Vos coordonnees")
-    col1, col2 = st.columns(2)
-    with col1:
-        nom = st.text_input("Nom et prenom *", placeholder="ex. Jean Dupont")
-        fonction = st.text_input("Fonction", placeholder="ex. Directeur, charge de mission")
-    with col2:
-        orga = st.text_input("Organisation evaluee *",
-                             value="Office de Tourisme Sud Vienne Poitou")
-        territoire = st.text_input("Territoire concerne",
-                                   value="Communaute de Communes Vienne et Gartempe")
-    email = st.text_input("Email (optionnel)",
-                          placeholder="optionnel - pour recevoir la synthese")
+    # Mode d'emploi notation
+    cinf1, cinf2, cinf3 = st.columns(3)
+    with cinf1:
+        st.markdown(
+            "<div class='kpi'><div class='kpi-val kpi-success'>1 pt</div>"
+            "<div class='kpi-lbl'>✅ Observe</div></div>",
+            unsafe_allow_html=True)
+    with cinf2:
+        st.markdown(
+            "<div class='kpi'><div class='kpi-val kpi-accent'>0,5 pt</div>"
+            "<div class='kpi-lbl'>🟡 Partiel</div></div>",
+            unsafe_allow_html=True)
+    with cinf3:
+        st.markdown(
+            "<div class='kpi'><div class='kpi-val kpi-danger'>0 pt</div>"
+            "<div class='kpi-lbl'>❌ Non observe</div></div>",
+            unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.subheader("📊 Evaluation par critere")
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
-    if "form_data" not in st.session_state:
-        st.session_state.form_data = {}
-
-    # Statut options pour les radios
+    # Statut options
     statut_options = [None, "obs", "part", "non"]
     statut_format = {
         None: "— Pas evalue",
@@ -1071,50 +1394,85 @@ def page_formulaire():
         "non": "❌ Non observe",
     }
 
-    for axe_num, axe_label in AXES.items():
-        color = AXE_COLORS[axe_num]
-        st.markdown(
-            f"<div class='axe-banner' style='background:{color}'>"
-            f"AXE {axe_num} : {axe_label.upper()}"
-            f"</div>", unsafe_allow_html=True
+    # ========================================================================
+    # TOUT LE FORMULAIRE DANS st.form -> aucun rechargement = aucun saut
+    # ========================================================================
+    with st.form(key="rte_form", clear_on_submit=False, border=False):
+
+        # --- Coordonnees ---
+        st.markdown("""
+        <div class='section-divider'><span>VOS COORDONNEES</span></div>
+        """, unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.text_input(
+                "Nom et prenom *", placeholder="ex. Jean Dupont",
+                key="meta_nom",
+            )
+            st.text_input(
+                "Fonction", placeholder="ex. Directeur, charge de mission",
+                key="meta_fonction",
+            )
+        with col2:
+            st.text_input(
+                "Organisation evaluee *",
+                value="Office de Tourisme Sud Vienne Poitou",
+                key="meta_orga",
+            )
+            st.text_input(
+                "Territoire concerne",
+                value="Communaute de Communes Vienne et Gartempe",
+                key="meta_territoire",
+            )
+        st.text_input(
+            "Email (optionnel)",
+            placeholder="optionnel - pour recevoir la synthese",
+            key="meta_email",
         )
-        criteres_axe = [(c, a, t) for c, a, t in CRITERES if a == axe_num]
-        for c_id, _, titre in criteres_axe:
-            # Calcul du score actuel si reponses partielles
-            current_qs = st.session_state.form_data.get(c_id, {}).get("questions", {})
-            current_score = score_critere(current_qs)
-            score_label = (f"  ·  Score : {current_score:.2f}/4" if current_score is not None
-                           else "  ·  Score : —")
-            nb_rep = nb_questions_repondues(current_qs)
-            total_q = len(CHECKLISTS[c_id])
 
-            with st.expander(
-                f"**{c_id}** — {titre}   ({nb_rep}/{total_q} questions{score_label})",
-                expanded=False,
-            ):
-                if c_id not in st.session_state.form_data:
-                    st.session_state.form_data[c_id] = {"questions": {}, "commentaire": ""}
+        # --- Boucle sur les axes ---
+        for axe_num, axe_label in AXES.items():
+            color = AXE_COLORS[axe_num]
+            criteres_axe = [(c, a, t) for c, a, t in CRITERES if a == axe_num]
+            nb_q_axe = sum(len(CHECKLISTS[c_id]) for c_id, _, _ in criteres_axe)
 
-                # En-tete de colonnes
-                ch, cs, cp = st.columns([4, 3, 4])
-                with ch:
-                    st.markdown("**Question**")
-                with cs:
-                    st.markdown("**Statut**")
-                with cp:
-                    st.markdown("**Preuve / source / observation**")
-                st.markdown("---")
+            st.markdown(
+                f"<div class='axe-banner' style='background:linear-gradient(135deg,{color} 0%, {color}DD 100%)'>"
+                f"<span class='axe-num'>AXE {axe_num}</span>"
+                f"<span>{axe_label.upper()}</span>"
+                f"<span style='margin-left:auto;font-size:12px;opacity:0.85;font-weight:500'>"
+                f"{len(criteres_axe)} criteres · {nb_q_axe} questions</span>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
 
+            for c_id, _, titre in criteres_axe:
+                # Carte critere
+                st.markdown(
+                    f"<div class='crit-card'>"
+                    f"<div class='crit-head'>"
+                    f"<span class='crit-id'>{c_id}</span>"
+                    f"<span class='crit-title'>{titre}</span>"
+                    f"</div>"
+                    f"<div class='crit-hint'>💡 {len(CHECKLISTS[c_id])} questions a evaluer. "
+                    f"Score auto = (moyenne / nb questions) × 4.</div>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+
+                # Questions
                 for q in CHECKLISTS[c_id]:
-                    cq, cstat, cpr = st.columns([4, 3, 4])
-                    with cq:
-                        st.markdown(
-                            f"<span class='q-id'>{q['id']}</span><br>"
-                            f"<span class='q-label'>{q['label']}</span>",
-                            unsafe_allow_html=True
-                        )
+                    st.markdown(
+                        f"<div class='question-block'>"
+                        f"<span class='q-id-tag'>{q['id']}</span>"
+                        f"<span class='q-text'>{q['label']}</span>"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
+                    cstat, cpr = st.columns([1, 1.5])
                     with cstat:
-                        statut = st.radio(
+                        st.radio(
                             label=f"Statut {q['id']}",
                             options=statut_options,
                             format_func=lambda x: statut_format[x],
@@ -1124,72 +1482,77 @@ def page_formulaire():
                             index=0,
                         )
                     with cpr:
-                        preuve = st.text_area(
+                        st.text_area(
                             label=f"Preuve {q['id']}",
                             key=f"pr_{q['id']}",
-                            placeholder="Document, exemple, source...",
+                            placeholder="Document, exemple, source, indicateur...",
                             label_visibility="collapsed",
-                            height=80,
+                            height=85,
                         )
-                    st.session_state.form_data[c_id]["questions"][q["id"]] = {
-                        "statut": statut,
-                        "preuve": preuve,
-                    }
-                    st.markdown("")  # petit espace
 
-                # Commentaire libre du critere
-                commentaire = st.text_area(
+                st.text_area(
                     "Commentaire global sur ce critere (facultatif)",
                     key=f"com_{c_id}",
-                    placeholder="Remarques transversales, points nuances...",
+                    placeholder="Remarques transversales, nuances, contexte...",
                     height=70,
                 )
-                st.session_state.form_data[c_id]["commentaire"] = commentaire
+                st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
 
-                # Score auto-calcule
-                final_qs = st.session_state.form_data[c_id]["questions"]
-                final_score = score_critere(final_qs)
-                final_nb = nb_questions_repondues(final_qs)
-                if final_score is not None:
-                    st.markdown(
-                        f"<div class='crit-score'>"
-                        f"🧮 <b>Score automatique : {final_score:.2f} / 4</b>  ·  "
-                        f"{final_nb}/{total_q} questions repondues  ·  "
-                        f"Niveau : {qualif(final_score)}"
-                        f"</div>", unsafe_allow_html=True
-                    )
+        # --- Commentaire global ---
+        st.markdown("""
+        <div class='section-divider'><span>POUR FINIR</span></div>
+        """, unsafe_allow_html=True)
+        st.text_area(
+            "Commentaire global / remarques transversales",
+            placeholder="(optionnel) Remarques qui ne rentrent pas dans la grille...",
+            height=100,
+            key="meta_com_global",
+        )
 
-    # ----- Recap global avant soumission -----
-    st.markdown("---")
-    commentaire_global = st.text_area(
-        "Commentaire global / remarques transversales",
-        placeholder="(optionnel) Remarques qui ne rentrent pas dans la grille...",
-        height=100,
-    )
+        # --- Submit button ---
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        submitted = st.form_submit_button(
+            "✅ Soumettre ma reponse",
+            type="primary", use_container_width=True,
+        )
 
-    # Stats globales
-    score_g = score_global(st.session_state.form_data)
-    nb_criteres_repondus = sum(
-        1 for c_id, _, _ in CRITERES
-        if score_critere(st.session_state.form_data.get(c_id, {}).get("questions", {})) is not None
-    )
+    # ========================================================================
+    # APRES SUBMIT : lecture des valeurs et sauvegarde
+    # ========================================================================
+    if submitted:
+        # Reconstitue les donnees depuis session_state
+        nom = st.session_state.get("meta_nom", "").strip()
+        fonction = st.session_state.get("meta_fonction", "").strip()
+        orga = st.session_state.get("meta_orga", "").strip()
+        territoire = st.session_state.get("meta_territoire", "").strip()
+        email = st.session_state.get("meta_email", "").strip()
+        commentaire_global = st.session_state.get("meta_com_global", "").strip()
 
-    st.markdown("---")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Criteres evalues", f"{nb_criteres_repondus} / {TOTAL_CRITERES}")
-    col2.metric("Votre score global provisoire",
-                f"{score_g:.2f} / 4" if score_g is not None else "—")
-    col3.metric("Niveau", qualif(score_g))
-    st.progress(nb_criteres_repondus / TOTAL_CRITERES if TOTAL_CRITERES else 0)
+        criteres_data = {}
+        for c_id, _, _ in CRITERES:
+            questions = {}
+            for q in CHECKLISTS[c_id]:
+                questions[q["id"]] = {
+                    "statut": st.session_state.get(f"st_{q['id']}"),
+                    "preuve": st.session_state.get(f"pr_{q['id']}", "").strip(),
+                }
+            criteres_data[c_id] = {
+                "questions": questions,
+                "commentaire": st.session_state.get(f"com_{c_id}", "").strip(),
+            }
 
-    # Validation
-    if st.button("✅ Soumettre ma reponse", type="primary", use_container_width=True):
-        if not nom.strip():
-            st.error("⚠️ Merci d'indiquer votre nom.")
-        elif not orga.strip():
+        # Validation
+        nb_criteres_repondus = sum(
+            1 for c_id, _, _ in CRITERES
+            if score_critere(criteres_data[c_id]["questions"]) is not None
+        )
+
+        if not nom:
+            st.error("⚠️ Merci d'indiquer votre nom et prenom.")
+        elif not orga:
             st.error("⚠️ Merci d'indiquer l'organisation evaluee.")
         elif nb_criteres_repondus == 0:
-            st.error("⚠️ Merci d'evaluer au moins une question.")
+            st.error("⚠️ Merci d'evaluer au moins une question avant de soumettre.")
         else:
             save_response(
                 meta={
@@ -1197,11 +1560,15 @@ def page_formulaire():
                     "territoire": territoire, "email": email,
                     "commentaire_global": commentaire_global,
                 },
-                criteres_data=st.session_state.form_data,
+                criteres_data=criteres_data,
             )
-            st.success(f"🎉 Merci {nom} ! Votre reponse a bien ete enregistree.")
+            score_g = score_global(criteres_data)
+            st.success(
+                f"🎉 Merci **{nom}** ! Votre reponse a bien ete enregistree.\n\n"
+                f"**Votre score global** : {score_g:.2f} / 4 — {qualif(score_g)}\n\n"
+                f"Criteres evalues : {nb_criteres_repondus} / {TOTAL_CRITERES}"
+            )
             st.balloons()
-            st.session_state.form_data = {}
 
 
 # ============================================================
