@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+reponses_rte.db
+reponses_rte.db-*
+.env
+.venv/
+venv/
