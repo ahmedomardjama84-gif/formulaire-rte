@@ -33,6 +33,17 @@ DB_PATH = "reponses_rte.db"
 APP_TITLE = "Grille de maturite RTE - Formulaire collaboratif"
 APP_ICON = "📊"
 
+# Code secret admin : modifiable ici OU via Streamlit secrets (cle "admin_code")
+# Les collegues voient seulement le formulaire ; toi tu accedes a tout avec ?admin=<code>
+DEFAULT_ADMIN_CODE = "rte2026"
+
+def get_admin_code():
+    """Renvoie le code admin (priorite a st.secrets, sinon fallback)."""
+    try:
+        return st.secrets.get("admin_code", DEFAULT_ADMIN_CODE)
+    except Exception:
+        return DEFAULT_ADMIN_CODE
+
 AXE_COLORS = {
     1: "#C28533",  # orange
     2: "#1F4E79",  # bleu
@@ -1838,6 +1849,45 @@ def page_admin():
 # MAIN
 # ============================================================
 
+def hide_sidebar_css():
+    """Cache la sidebar et son bouton de deroulement (mode public/collegues)."""
+    st.markdown("""
+    <style>
+        section[data-testid="stSidebar"] { display: none !important; }
+        div[data-testid="collapsedControl"] { display: none !important; }
+        .block-container { padding-left: 3rem !important; padding-right: 3rem !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+def page_admin_share():
+    """Affiche les liens a partager : URL publique vs URL admin."""
+    st.markdown("### 🔗 Liens a partager")
+    # Construction de l'URL courante
+    try:
+        url_admin_param = st.query_params.get("admin", "")
+    except Exception:
+        url_admin_param = ""
+
+    st.info(
+        "**👥 Lien pour vos collegues** (a envoyer par mail) :  \n"
+        "Copiez l'URL actuelle de votre navigateur SANS le bout `?admin=...`. "
+        "Ils verront uniquement le formulaire (pas le dashboard, pas l'admin)."
+    )
+    st.success(
+        f"**🔑 Votre lien admin** (a garder pour vous) :  \n"
+        f"Cette URL avec `?admin={url_admin_param}` a la fin vous donne acces "
+        f"au Dashboard et a l'Admin. Mettez-la en favori."
+    )
+    st.markdown("---")
+    st.markdown(
+        "**💡 Pour changer le code secret :**  \n"
+        "Modifiez la valeur de `DEFAULT_ADMIN_CODE` dans `app_rte.py` (ligne ~40), "
+        "OU sur Streamlit Cloud : Settings → Secrets → ajoutez :  \n"
+        "```\nadmin_code = \"mon_nouveau_code\"\n```"
+    )
+
+
 def main():
     st.set_page_config(
         page_title=APP_TITLE, page_icon=APP_ICON, layout="wide",
@@ -1846,14 +1896,39 @@ def main():
     apply_custom_css()
     init_db()
 
+    # ============================================================
+    # CONTROLE D'ACCES via parametre URL ?admin=<code>
+    # ============================================================
+    try:
+        provided_code = st.query_params.get("admin", "")
+    except Exception:
+        provided_code = ""
+    is_admin = (provided_code == get_admin_code())
+
+    if not is_admin:
+        # === MODE PUBLIC / COLLEGUES : formulaire seul, sidebar cachee ===
+        hide_sidebar_css()
+        page_formulaire()
+        return
+
+    # === MODE ADMIN : sidebar complete avec toutes les pages ===
     with st.sidebar:
         st.title("🧭 Navigation")
         st.markdown("**Grille de maturite RTE**")
         st.caption("Responsabilite Territoriale des Entreprises")
+        st.markdown(
+            "<div style='background:rgba(225,182,96,0.15);padding:8px 12px;"
+            "border-radius:6px;border-left:3px solid #E1B660;margin:8px 0;'>"
+            "<b style='color:#E1B660'>🔑 MODE ADMIN</b><br>"
+            "<span style='font-size:11px;opacity:0.85'>Vos collegues n'ont acces "
+            "qu'au Formulaire.</span>"
+            "</div>",
+            unsafe_allow_html=True
+        )
         st.markdown("---")
         page = st.radio(
             "Choisir la page",
-            options=["📝 Formulaire", "📊 Dashboard", "⚙️ Admin"],
+            options=["📝 Formulaire", "📊 Dashboard", "⚙️ Admin", "🔗 Partage"],
             label_visibility="collapsed",
         )
         st.markdown("---")
@@ -1877,6 +1952,8 @@ def main():
         page_dashboard()
     elif page == "⚙️ Admin":
         page_admin()
+    elif page == "🔗 Partage":
+        page_admin_share()
 
 
 if __name__ == "__main__":
