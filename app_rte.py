@@ -1414,6 +1414,12 @@ def page_formulaire():
         st.markdown("""
         <div class='section-divider'><span>VOS COORDONNEES</span></div>
         """, unsafe_allow_html=True)
+        st.markdown(
+            "<p style='color:#7D8B96;font-size:13px;margin-bottom:18px'>"
+            "Les champs marques d'un <b style='color:#9C2A2A'>*</b> sont obligatoires."
+            "</p>",
+            unsafe_allow_html=True,
+        )
 
         col1, col2 = st.columns(2)
         with col1:
@@ -1422,25 +1428,29 @@ def page_formulaire():
                 key="meta_nom",
             )
             st.text_input(
+                "Email *", placeholder="ex. jean.dupont@example.com",
+                key="meta_email",
+                help="Pour vous tenir informe et pouvoir vous recontacter si besoin.",
+            )
+            st.text_input(
                 "Fonction", placeholder="ex. Directeur, charge de mission",
                 key="meta_fonction",
             )
         with col2:
             st.text_input(
                 "Organisation evaluee *",
-                value="Office de Tourisme Sud Vienne Poitou",
+                value="",
+                placeholder="ex. Office de Tourisme Sud Vienne Poitou",
                 key="meta_orga",
+                help="Nom exact de l'organisation que vous evaluez. "
+                     "Les reponses portant le meme nom seront regroupees dans le dashboard.",
             )
             st.text_input(
                 "Territoire concerne",
-                value="Communaute de Communes Vienne et Gartempe",
+                value="",
+                placeholder="ex. Communaute de Communes Vienne et Gartempe",
                 key="meta_territoire",
             )
-        st.text_input(
-            "Email (optionnel)",
-            placeholder="optionnel - pour recevoir la synthese",
-            key="meta_email",
-        )
 
         # --- Boucle sur les axes ---
         for axe_num, axe_label in AXES.items():
@@ -1560,6 +1570,8 @@ def page_formulaire():
 
         if not nom:
             st.error("⚠️ Merci d'indiquer votre nom et prenom.")
+        elif not email or "@" not in email or "." not in email.split("@")[-1]:
+            st.error("⚠️ Merci d'indiquer un email valide.")
         elif not orga:
             st.error("⚠️ Merci d'indiquer l'organisation evaluee.")
         elif nb_criteres_repondus == 0:
@@ -1589,11 +1601,122 @@ def page_formulaire():
 def page_dashboard():
     st.title("📊 Dashboard - Synthese collective en temps reel")
 
-    df = load_responses()
-    if len(df) == 0:
+    df_all = load_responses()
+    if len(df_all) == 0:
         st.info("👋 Aucune reponse pour l'instant. Partagez le lien du formulaire avec vos collegues !")
         return
 
+    # ============================================================
+    # FILTRE PAR ORGANISATION
+    # ============================================================
+    organisations_uniques = sorted(df_all["organisation"].dropna().unique().tolist())
+    OPTION_TOUTES = "🌐 Toutes les organisations"
+    options_filtre = [OPTION_TOUTES] + organisations_uniques
+
+    st.markdown(
+        "<div style='background:linear-gradient(135deg,#0F2A47 0%,#1F4E79 100%);"
+        "padding:18px 24px;border-radius:14px;margin-bottom:20px;color:white;'>"
+        "<div style='font-size:11px;font-weight:600;letter-spacing:0.08em;"
+        "color:#E1B660;text-transform:uppercase;margin-bottom:4px'>"
+        "FILTRER PAR ORGANISATION EVALUEE</div>"
+        "<div style='opacity:0.85;font-size:13px'>Choisissez une organisation pour voir "
+        "uniquement ses repondants et ses resultats.</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    filtre_orga = st.selectbox(
+        "Organisation",
+        options=options_filtre,
+        index=0,
+        label_visibility="collapsed",
+    )
+
+    if filtre_orga == OPTION_TOUTES:
+        df = df_all
+        org_filtree = None
+    else:
+        df = df_all[df_all["organisation"] == filtre_orga].reset_index(drop=True)
+        org_filtree = filtre_orga
+
+    if len(df) == 0:
+        st.warning(f"Aucune reponse pour l'organisation : {org_filtree}")
+        return
+
+    # ============================================================
+    # BLOC ORGANISATION + REPONDANTS (visible si org filtree)
+    # ============================================================
+    if org_filtree:
+        repondants_blocks = []
+        for _, row in df.iterrows():
+            nom = row["nom_repondant"]
+            fonction = row["fonction"] or ""
+            email = row["email"] or ""
+            date_sub = row["date_soumission"][:10]
+            fonction_html = (f" · <span style='color:#7D8B96;font-size:13px'>{fonction}</span>"
+                             if fonction else "")
+            email_html = f"📧 {email} · " if email else ""
+            repondants_blocks.append(
+                f"<div style='padding:10px 14px;background:#F7F8FC;border-radius:8px;"
+                f"margin-bottom:6px;border-left:3px solid #1F4E79'>"
+                f"<b style='color:#0F2A47'>{nom}</b>{fonction_html}"
+                f"<br><span style='font-size:12px;color:#7D8B96'>"
+                f"{email_html}📅 {date_sub}"
+                f"</span></div>"
+            )
+        repondants_html = "".join(repondants_blocks)
+        st.markdown(
+            f"<div style='background:white;border-radius:14px;padding:24px;"
+            f"box-shadow:0 2px 8px rgba(15,42,71,0.06);border:1px solid #E5E9F0;"
+            f"margin-bottom:24px'>"
+            f"<div style='display:flex;align-items:center;gap:12px;margin-bottom:16px'>"
+            f"<div style='background:#0F2A47;color:white;padding:6px 14px;"
+            f"border-radius:8px;font-size:11px;font-weight:700;letter-spacing:0.08em'>"
+            f"ORGANISATION EVALUEE</div>"
+            f"<div style='font-size:20px;font-weight:700;color:#0F2A47'>{org_filtree}</div>"
+            f"</div>"
+            f"<div style='color:#7D8B96;font-size:13px;margin-bottom:14px'>"
+            f"<b>{len(df)} repondant{'s' if len(df) > 1 else ''}</b> "
+            f"sur cette organisation</div>"
+            f"{repondants_html}"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        # Vue globale : nombre d'organisations + nombre de repondants par organisation
+        nb_orgs = len(organisations_uniques)
+        st.markdown(
+            f"<div style='background:white;border-radius:14px;padding:24px;"
+            f"box-shadow:0 2px 8px rgba(15,42,71,0.06);border:1px solid #E5E9F0;"
+            f"margin-bottom:24px'>"
+            f"<div style='display:flex;align-items:center;gap:12px;margin-bottom:16px'>"
+            f"<div style='background:#E1B660;color:#0F2A47;padding:6px 14px;"
+            f"border-radius:8px;font-size:11px;font-weight:700;letter-spacing:0.08em'>"
+            f"VUE GLOBALE</div>"
+            f"<div style='font-size:18px;font-weight:700;color:#0F2A47'>"
+            f"{nb_orgs} organisation{'s' if nb_orgs > 1 else ''} evaluee{'s' if nb_orgs > 1 else ''} · "
+            f"{len(df_all)} reponse{'s' if len(df_all) > 1 else ''} au total</div>"
+            f"</div>"
+            f"<div style='color:#7D8B96;font-size:13px'>"
+            f"Selectionnez une organisation ci-dessus pour voir le detail des repondants et resultats."
+            f"</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+
+        # Mini-tableau de repartition par organisation
+        repartition = (df_all.groupby("organisation")
+                       .agg(nb_reponses=("id", "count"),
+                            repondants=("nom_repondant", lambda x: ", ".join(sorted(x.unique()))))
+                       .reset_index()
+                       .sort_values("nb_reponses", ascending=False))
+        repartition.columns = ["Organisation", "Nb reponses", "Repondants"]
+        st.markdown("**Repartition par organisation :**")
+        st.dataframe(repartition, hide_index=True, use_container_width=True)
+
+    # ============================================================
+    # SUITE DU DASHBOARD : calculs sur df (filtre)
+    # ============================================================
     # Scores par axe
     all_scores = []
     for _, row in df.iterrows():
@@ -1776,11 +1899,25 @@ def page_dashboard():
     # Export Word
     st.markdown("---")
     st.subheader("📥 Exporter la synthese")
+    if org_filtree:
+        st.caption(
+            f"L'export ne contient que les reponses pour **{org_filtree}** "
+            f"({len(df)} repondant{'s' if len(df) > 1 else ''})."
+        )
+        org_slug = "".join(c if c.isalnum() else "_" for c in org_filtree)[:40]
+        filename = f"Synthese_RTE_{org_slug}_{date.today().isoformat()}.docx"
+    else:
+        st.caption(
+            f"L'export contient toutes les reponses de toutes les organisations "
+            f"({len(df_all)} reponse{'s' if len(df_all) > 1 else ''})."
+        )
+        filename = f"Synthese_RTE_{date.today().isoformat()}.docx"
+
     buf = export_synthese_docx(df)
     st.download_button(
         label="📄 Telecharger la synthese en Word (.docx)",
         data=buf,
-        file_name=f"Synthese_RTE_{date.today().isoformat()}.docx",
+        file_name=filename,
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         type="primary",
         use_container_width=True,
