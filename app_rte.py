@@ -1335,6 +1335,94 @@ def apply_custom_css():
         font-weight: 600;
         position: relative;
     }
+
+    /* === STEPPER === */
+    .stepper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        margin: 0 0 28px 0;
+        padding: 16px;
+        background: white;
+        border-radius: 14px;
+        border: 1px solid #E5E9F0;
+        box-shadow: 0 2px 6px rgba(15,42,71,0.05);
+        flex-wrap: wrap;
+    }
+    .step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #7D8B96;
+        background: transparent;
+        transition: all 0.2s;
+    }
+    .step-circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 700;
+        background: #EAEFF5;
+        color: #7D8B96;
+        border: 2px solid transparent;
+    }
+    .step.done .step-circle {
+        background: #2D7A65;
+        color: white;
+    }
+    .step.done {
+        color: #2D7A65;
+    }
+    .step.active {
+        background: linear-gradient(135deg, #1F4E79 0%, #2A6AAA 100%);
+        color: white;
+        box-shadow: 0 4px 12px -3px rgba(31, 78, 121, 0.4);
+    }
+    .step.active .step-circle {
+        background: #E1B660;
+        color: #0F2A47;
+    }
+    .step-sep {
+        color: #D7DEE8;
+        font-size: 14px;
+        margin: 0 2px;
+    }
+
+    /* === VALIDATION BADGE === */
+    .axe-done {
+        background: linear-gradient(135deg, #2D7A65 0%, #34906F 100%);
+        color: white;
+        padding: 16px 22px;
+        border-radius: 12px;
+        margin: 18px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 6px 16px -4px rgba(45, 122, 101, 0.3);
+    }
+    .axe-done-icon {
+        background: rgba(255,255,255,0.25);
+        padding: 6px 10px;
+        border-radius: 50%;
+        font-size: 18px;
+    }
+    .axe-done-title {
+        font-weight: 700;
+        font-size: 15px;
+    }
+    .axe-done-sub {
+        font-size: 12px;
+        opacity: 0.9;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -1343,255 +1431,417 @@ def apply_custom_css():
 # UI : PAGE FORMULAIRE
 # ============================================================
 
-def page_formulaire():
-    # Hero header
-    nb_questions_total = sum(len(items) for items in CHECKLISTS.values())
-    st.markdown(f"""
+# ============================================================
+# FORMULAIRE MULTI-ETAPES
+# ============================================================
+# Etape 0 = Coordonnees | Etapes 1-5 = Axes 1-5 | Etape 6 = Recap+Submit
+
+NB_STEPS = 7  # 0..6
+STEP_LABELS = {
+    0: "Vous",
+    1: "Axe 1", 2: "Axe 2", 3: "Axe 3", 4: "Axe 4", 5: "Axe 5",
+    6: "Envoi",
+}
+
+STATUT_OPTIONS = [None, "obs", "part", "non"]
+STATUT_FORMAT = {
+    None: "— Pas evalue",
+    "obs": "✅ Observe",
+    "part": "🟡 Partiel",
+    "non": "❌ Non observe",
+}
+
+
+def _stepper(current):
+    """Affiche le stepper visuel en haut du formulaire."""
+    parts = ["<div class='stepper'>"]
+    for i in range(NB_STEPS):
+        if i < current:
+            cls = "step done"
+            circle_content = "✓"
+        elif i == current:
+            cls = "step active"
+            circle_content = str(i + 1)
+        else:
+            cls = "step"
+            circle_content = str(i + 1)
+        parts.append(
+            f"<div class='{cls}'>"
+            f"<span class='step-circle'>{circle_content}</span>"
+            f"<span>{STEP_LABELS[i]}</span>"
+            f"</div>"
+        )
+        if i < NB_STEPS - 1:
+            parts.append("<span class='step-sep'>›</span>")
+    parts.append("</div>")
+    st.markdown("".join(parts), unsafe_allow_html=True)
+
+
+def _go_to_step(n):
+    st.session_state.form_step = n
+    st.rerun()
+
+
+def _form_step_coords():
+    """Etape 0 : coordonnees du repondant."""
+    st.markdown("""
     <div class='hero'>
-        <div class='hero-tag'>Grille de maturite RTE · Modele V4</div>
-        <h1 class='hero-title'>Evaluation collaborative de la maturite RTE</h1>
+        <div class='hero-tag'>Etape 1 / 7 · Coordonnees</div>
+        <h1 class='hero-title'>Commencons par vous connaitre</h1>
         <p class='hero-subtitle'>
-            Pour chaque question, indiquez si la pratique est <b>Observee</b>,
-            <b>Partielle</b> ou <b>Non observee</b>, et ajoutez une preuve quand vous pouvez.
-            La notation se calcule automatiquement.
+            Renseignez vos coordonnees et l'organisation que vous evaluez.
+            Les champs marques d'un <b style='color:#E1B660'>*</b> sont obligatoires.
         </p>
-        <div class='hero-meta'>
-            <div class='hero-meta-item'>
-                <span class='hero-meta-val'>5</span>
-                <span class='hero-meta-lbl'>Axes</span>
-            </div>
-            <div class='hero-meta-item'>
-                <span class='hero-meta-val'>{TOTAL_CRITERES}</span>
-                <span class='hero-meta-lbl'>Criteres</span>
-            </div>
-            <div class='hero-meta-item'>
-                <span class='hero-meta-val'>{nb_questions_total}</span>
-                <span class='hero-meta-lbl'>Questions</span>
-            </div>
-            <div class='hero-meta-item'>
-                <span class='hero-meta-val'>15-30</span>
-                <span class='hero-meta-lbl'>Minutes</span>
-            </div>
-        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Mode d'emploi notation
-    cinf1, cinf2, cinf3 = st.columns(3)
-    with cinf1:
-        st.markdown(
-            "<div class='kpi'><div class='kpi-val kpi-success'>1 pt</div>"
-            "<div class='kpi-lbl'>✅ Observe</div></div>",
-            unsafe_allow_html=True)
-    with cinf2:
-        st.markdown(
-            "<div class='kpi'><div class='kpi-val kpi-accent'>0,5 pt</div>"
-            "<div class='kpi-lbl'>🟡 Partiel</div></div>",
-            unsafe_allow_html=True)
-    with cinf3:
-        st.markdown(
-            "<div class='kpi'><div class='kpi-val kpi-danger'>0 pt</div>"
-            "<div class='kpi-lbl'>❌ Non observe</div></div>",
-            unsafe_allow_html=True)
-
-    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
-
-    # Statut options
-    statut_options = [None, "obs", "part", "non"]
-    statut_format = {
-        None: "— Pas evalue",
-        "obs": "✅ Observe",
-        "part": "🟡 Partiel",
-        "non": "❌ Non observe",
-    }
-
-    # ========================================================================
-    # TOUT LE FORMULAIRE DANS st.form -> aucun rechargement = aucun saut
-    # ========================================================================
-    with st.form(key="rte_form", clear_on_submit=False, border=False):
-
-        # --- Coordonnees ---
-        st.markdown("""
-        <div class='section-divider'><span>VOS COORDONNEES</span></div>
-        """, unsafe_allow_html=True)
-        st.markdown(
-            "<p style='color:#7D8B96;font-size:13px;margin-bottom:18px'>"
-            "Les champs marques d'un <b style='color:#9C2A2A'>*</b> sont obligatoires."
-            "</p>",
-            unsafe_allow_html=True,
-        )
-
+    with st.form("step_coords", border=False):
         col1, col2 = st.columns(2)
         with col1:
-            st.text_input(
-                "Nom et prenom *", placeholder="ex. Jean Dupont",
-                key="meta_nom",
-            )
-            st.text_input(
-                "Email *", placeholder="ex. jean.dupont@example.com",
-                key="meta_email",
-                help="Pour vous tenir informe et pouvoir vous recontacter si besoin.",
-            )
-            st.text_input(
-                "Fonction", placeholder="ex. Directeur, charge de mission",
-                key="meta_fonction",
-            )
+            st.text_input("Nom et prenom *", placeholder="ex. Jean Dupont",
+                          key="meta_nom")
+            st.text_input("Email *", placeholder="ex. jean.dupont@example.com",
+                          key="meta_email",
+                          help="Pour vous tenir informe si besoin.")
+            st.text_input("Fonction", placeholder="ex. Directeur, charge de mission",
+                          key="meta_fonction")
         with col2:
             st.text_input(
-                "Organisation evaluee *",
-                value="",
+                "Organisation evaluee *", value="",
                 placeholder="ex. Office de Tourisme Sud Vienne Poitou",
                 key="meta_orga",
-                help="Nom exact de l'organisation que vous evaluez. "
-                     "Les reponses portant le meme nom seront regroupees dans le dashboard.",
-            )
-            st.text_input(
-                "Territoire concerne",
-                value="",
-                placeholder="ex. Communaute de Communes Vienne et Gartempe",
-                key="meta_territoire",
-            )
+                help="Les reponses portant le meme nom seront regroupees dans le dashboard.")
+            st.text_input("Territoire concerne", value="",
+                          placeholder="ex. Communaute de Communes Vienne et Gartempe",
+                          key="meta_territoire")
 
-        # --- Boucle sur les axes ---
-        for axe_num, axe_label in AXES.items():
-            color = AXE_COLORS[axe_num]
-            criteres_axe = [(c, a, t) for c, a, t in CRITERES if a == axe_num]
-            nb_q_axe = sum(len(CHECKLISTS[c_id]) for c_id, _, _ in criteres_axe)
-
-            st.markdown(
-                f"<div class='axe-banner' style='background:linear-gradient(135deg,{color} 0%, {color}DD 100%)'>"
-                f"<span class='axe-num'>AXE {axe_num}</span>"
-                f"<span>{axe_label.upper()}</span>"
-                f"<span style='margin-left:auto;font-size:12px;opacity:0.85;font-weight:500'>"
-                f"{len(criteres_axe)} criteres · {nb_q_axe} questions</span>"
-                f"</div>",
-                unsafe_allow_html=True
-            )
-
-            for c_id, _, titre in criteres_axe:
-                # Carte critere
-                st.markdown(
-                    f"<div class='crit-card'>"
-                    f"<div class='crit-head'>"
-                    f"<span class='crit-id'>{c_id}</span>"
-                    f"<span class='crit-title'>{titre}</span>"
-                    f"</div>"
-                    f"<div class='crit-hint'>💡 {len(CHECKLISTS[c_id])} questions a evaluer. "
-                    f"Score auto = (moyenne / nb questions) × 4.</div>"
-                    f"</div>",
-                    unsafe_allow_html=True
-                )
-
-                # Questions
-                for q in CHECKLISTS[c_id]:
-                    st.markdown(
-                        f"<div class='question-block'>"
-                        f"<span class='q-id-tag'>{q['id']}</span>"
-                        f"<span class='q-text'>{q['label']}</span>"
-                        f"</div>",
-                        unsafe_allow_html=True
-                    )
-                    cstat, cpr = st.columns([1, 1.5])
-                    with cstat:
-                        st.radio(
-                            label=f"Statut {q['id']}",
-                            options=statut_options,
-                            format_func=lambda x: statut_format[x],
-                            key=f"st_{q['id']}",
-                            label_visibility="collapsed",
-                            horizontal=False,
-                            index=0,
-                        )
-                    with cpr:
-                        st.text_area(
-                            label=f"Preuve {q['id']}",
-                            key=f"pr_{q['id']}",
-                            placeholder="Document, exemple, source, indicateur...",
-                            label_visibility="collapsed",
-                            height=85,
-                        )
-
-                st.text_area(
-                    "Commentaire global sur ce critere (facultatif)",
-                    key=f"com_{c_id}",
-                    placeholder="Remarques transversales, nuances, contexte...",
-                    height=70,
-                )
-                st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
-
-        # --- Commentaire global ---
-        st.markdown("""
-        <div class='section-divider'><span>POUR FINIR</span></div>
-        """, unsafe_allow_html=True)
-        st.text_area(
-            "Commentaire global / remarques transversales",
-            placeholder="(optionnel) Remarques qui ne rentrent pas dans la grille...",
-            height=100,
-            key="meta_com_global",
+        st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+        next_clicked = st.form_submit_button(
+            "Continuer vers Axe 1 →", type="primary", use_container_width=True,
         )
 
-        # --- Submit button ---
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        submitted = st.form_submit_button(
-            "✅ Soumettre ma reponse",
-            type="primary", use_container_width=True,
-        )
-
-    # ========================================================================
-    # APRES SUBMIT : lecture des valeurs et sauvegarde
-    # ========================================================================
-    if submitted:
-        # Reconstitue les donnees depuis session_state
+    if next_clicked:
         nom = st.session_state.get("meta_nom", "").strip()
-        fonction = st.session_state.get("meta_fonction", "").strip()
-        orga = st.session_state.get("meta_orga", "").strip()
-        territoire = st.session_state.get("meta_territoire", "").strip()
         email = st.session_state.get("meta_email", "").strip()
-        commentaire_global = st.session_state.get("meta_com_global", "").strip()
-
-        criteres_data = {}
-        for c_id, _, _ in CRITERES:
-            questions = {}
-            for q in CHECKLISTS[c_id]:
-                questions[q["id"]] = {
-                    "statut": st.session_state.get(f"st_{q['id']}"),
-                    "preuve": st.session_state.get(f"pr_{q['id']}", "").strip(),
-                }
-            criteres_data[c_id] = {
-                "questions": questions,
-                "commentaire": st.session_state.get(f"com_{c_id}", "").strip(),
-            }
-
-        # Validation
-        nb_criteres_repondus = sum(
-            1 for c_id, _, _ in CRITERES
-            if score_critere(criteres_data[c_id]["questions"]) is not None
-        )
-
+        orga = st.session_state.get("meta_orga", "").strip()
         if not nom:
             st.error("⚠️ Merci d'indiquer votre nom et prenom.")
         elif not email or "@" not in email or "." not in email.split("@")[-1]:
             st.error("⚠️ Merci d'indiquer un email valide.")
         elif not orga:
             st.error("⚠️ Merci d'indiquer l'organisation evaluee.")
-        elif nb_criteres_repondus == 0:
-            st.error("⚠️ Merci d'evaluer au moins une question avant de soumettre.")
         else:
-            save_response(
-                meta={
-                    "nom": nom, "fonction": fonction, "organisation": orga,
-                    "territoire": territoire, "email": email,
-                    "commentaire_global": commentaire_global,
-                },
-                criteres_data=criteres_data,
+            _go_to_step(1)
+
+
+def _form_step_axe(axe_num):
+    """Etapes 1-5 : un axe a la fois."""
+    axe_label = AXES[axe_num]
+    color = AXE_COLORS[axe_num]
+    criteres_axe = [(c, a, t) for c, a, t in CRITERES if a == axe_num]
+    nb_q_axe = sum(len(CHECKLISTS[c_id]) for c_id, _, _ in criteres_axe)
+
+    st.markdown(f"""
+    <div class='hero' style='background:linear-gradient(135deg,{color} 0%, {color}AA 100%)'>
+        <div class='hero-tag'>Etape {axe_num + 1} / 7 · Axe {axe_num}</div>
+        <h1 class='hero-title'>{axe_label}</h1>
+        <p class='hero-subtitle'>
+            {len(criteres_axe)} criteres · {nb_q_axe} questions ·
+            Pour chacune : Observe / Partiel / Non observe + une preuve si possible.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.form(f"step_axe_{axe_num}", border=False):
+        for c_id, _, titre in criteres_axe:
+            st.markdown(
+                f"<div class='crit-card'>"
+                f"<div class='crit-head'>"
+                f"<span class='crit-id'>{c_id}</span>"
+                f"<span class='crit-title'>{titre}</span>"
+                f"</div>"
+                f"<div class='crit-hint'>💡 {len(CHECKLISTS[c_id])} questions a evaluer.</div>"
+                f"</div>",
+                unsafe_allow_html=True,
             )
-            score_g = score_global(criteres_data)
-            st.success(
-                f"🎉 Merci **{nom}** ! Votre reponse a bien ete enregistree.\n\n"
-                f"**Votre score global** : {score_g:.2f} / 4 — {qualif(score_g)}\n\n"
-                f"Criteres evalues : {nb_criteres_repondus} / {TOTAL_CRITERES}"
+            for q in CHECKLISTS[c_id]:
+                st.markdown(
+                    f"<div class='question-block'>"
+                    f"<span class='q-id-tag'>{q['id']}</span>"
+                    f"<span class='q-text'>{q['label']}</span>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+                cstat, cpr = st.columns([1, 1.5])
+                with cstat:
+                    st.radio(
+                        label=f"Statut {q['id']}",
+                        options=STATUT_OPTIONS,
+                        format_func=lambda x: STATUT_FORMAT[x],
+                        key=f"st_{q['id']}",
+                        label_visibility="collapsed",
+                        horizontal=False, index=0,
+                    )
+                with cpr:
+                    st.text_area(
+                        label=f"Preuve {q['id']}",
+                        key=f"pr_{q['id']}",
+                        placeholder="Document, exemple, source, indicateur...",
+                        label_visibility="collapsed", height=85,
+                    )
+            st.text_area(
+                "Commentaire global sur ce critere (facultatif)",
+                key=f"com_{c_id}",
+                placeholder="Remarques transversales, nuances, contexte...",
+                height=70,
             )
-            st.balloons()
+            st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        col_prev, col_next = st.columns([1, 2])
+        with col_prev:
+            prev_clicked = st.form_submit_button(
+                "← Precedent", use_container_width=True,
+            )
+        with col_next:
+            next_label = ("✅ Valider Axe 5 et passer a l'envoi →"
+                          if axe_num == 5
+                          else f"✅ Valider Axe {axe_num} et continuer (Axe {axe_num + 1}) →")
+            next_clicked = st.form_submit_button(
+                next_label, type="primary", use_container_width=True,
+            )
+
+    if prev_clicked:
+        _go_to_step(axe_num - 1)
+    if next_clicked:
+        # Petit feedback de validation
+        nb_rep = sum(
+            1 for c_id, _, _ in criteres_axe
+            for q in CHECKLISTS[c_id]
+            if st.session_state.get(f"st_{q['id']}") in POINTS
+        )
+        st.markdown(
+            f"<div class='axe-done'>"
+            f"<span class='axe-done-icon'>✓</span>"
+            f"<div>"
+            f"<div class='axe-done-title'>Axe {axe_num} valide !</div>"
+            f"<div class='axe-done-sub'>{nb_rep} question{'s' if nb_rep > 1 else ''} "
+            f"repondue{'s' if nb_rep > 1 else ''} sur {nb_q_axe}</div>"
+            f"</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        _go_to_step(axe_num + 1)
+
+
+def _form_step_recap():
+    """Etape 6 : recap + soumission finale."""
+    # Calcul du recap
+    criteres_data = {}
+    for c_id, _, _ in CRITERES:
+        questions = {}
+        for q in CHECKLISTS[c_id]:
+            questions[q["id"]] = {
+                "statut": st.session_state.get(f"st_{q['id']}"),
+                "preuve": (st.session_state.get(f"pr_{q['id']}", "") or "").strip(),
+            }
+        criteres_data[c_id] = {
+            "questions": questions,
+            "commentaire": (st.session_state.get(f"com_{c_id}", "") or "").strip(),
+        }
+
+    nb_criteres_repondus = sum(
+        1 for c_id, _, _ in CRITERES
+        if score_critere(criteres_data[c_id]["questions"]) is not None
+    )
+    nb_questions_repondues_total = sum(
+        nb_questions_repondues(criteres_data[c_id]["questions"])
+        for c_id, _, _ in CRITERES
+    )
+    nb_q_total = sum(len(items) for items in CHECKLISTS.values())
+    score_g = score_global(criteres_data)
+
+    st.markdown(f"""
+    <div class='hero'>
+        <div class='hero-tag'>Etape 7 / 7 · Recapitulatif</div>
+        <h1 class='hero-title'>Pret a envoyer votre evaluation ?</h1>
+        <p class='hero-subtitle'>
+            Verifiez le recapitulatif ci-dessous, puis cliquez sur Soumettre.
+            Vous pouvez revenir en arriere pour modifier un axe si besoin.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # KPI
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown(
+            f"<div class='kpi'><div class='kpi-val kpi-accent'>{nb_questions_repondues_total} / {nb_q_total}</div>"
+            f"<div class='kpi-lbl'>Questions repondues</div></div>",
+            unsafe_allow_html=True)
+    with c2:
+        st.markdown(
+            f"<div class='kpi'><div class='kpi-val kpi-success'>{nb_criteres_repondus} / {TOTAL_CRITERES}</div>"
+            f"<div class='kpi-lbl'>Criteres evalues</div></div>",
+            unsafe_allow_html=True)
+    with c3:
+        score_str = f"{score_g:.2f}" if score_g is not None else "—"
+        st.markdown(
+            f"<div class='kpi'><div class='kpi-val'>{score_str}</div>"
+            f"<div class='kpi-lbl'>Score / 4</div></div>",
+            unsafe_allow_html=True)
+
+    # Recap par axe
+    st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+    st.markdown("**Recap par axe :**")
+    for axe_num, axe_label in AXES.items():
+        s_axe = score_axe(criteres_data, axe_num)
+        criteres_axe = [(c, a, t) for c, a, t in CRITERES if a == axe_num]
+        nb_q = sum(len(CHECKLISTS[c_id]) for c_id, _, _ in criteres_axe)
+        nb_r = sum(
+            nb_questions_repondues(criteres_data[c_id]["questions"])
+            for c_id, _, _ in criteres_axe
+        )
+        color = AXE_COLORS[axe_num]
+        score_html = (f"<b style='color:{color}'>{s_axe:.2f} / 4</b>"
+                      if s_axe is not None else "<i style='color:#7D8B96'>Non evalue</i>")
+        st.markdown(
+            f"<div style='display:flex;align-items:center;gap:14px;padding:10px 14px;"
+            f"background:white;border-radius:8px;border-left:4px solid {color};margin-bottom:6px'>"
+            f"<span style='font-weight:700;color:{color};min-width:60px'>Axe {axe_num}</span>"
+            f"<span style='flex:1;color:#2C3E50'>{axe_label}</span>"
+            f"<span style='color:#7D8B96;font-size:12px'>{nb_r}/{nb_q} questions</span>"
+            f"<span>{score_html}</span>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+
+    # Commentaire global
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+    with st.form("step_recap", border=False):
+        st.text_area(
+            "Commentaire global / remarques transversales (facultatif)",
+            placeholder="Remarques qui ne rentrent pas dans la grille...",
+            height=100, key="meta_com_global",
+        )
+
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        col_prev, col_send = st.columns([1, 2])
+        with col_prev:
+            prev_clicked = st.form_submit_button(
+                "← Modifier Axe 5", use_container_width=True,
+            )
+        with col_send:
+            send_clicked = st.form_submit_button(
+                "📤 Soumettre ma reponse definitivement",
+                type="primary", use_container_width=True,
+            )
+
+    if prev_clicked:
+        _go_to_step(5)
+    if send_clicked:
+        nom = st.session_state.get("meta_nom", "").strip()
+        email = st.session_state.get("meta_email", "").strip()
+        orga = st.session_state.get("meta_orga", "").strip()
+        if nb_criteres_repondus == 0:
+            st.error("⚠️ Aucune question repondue. Revenez aux axes precedents pour completer.")
+            return
+        # Recharger criteres_data (au cas ou commentaire global a change)
+        commentaire_global = st.session_state.get("meta_com_global", "").strip()
+        save_response(
+            meta={
+                "nom": nom,
+                "fonction": st.session_state.get("meta_fonction", "").strip(),
+                "organisation": orga,
+                "territoire": st.session_state.get("meta_territoire", "").strip(),
+                "email": email,
+                "commentaire_global": commentaire_global,
+            },
+            criteres_data=criteres_data,
+        )
+        st.session_state.form_step = "done"
+        st.session_state.last_score = score_g
+        st.session_state.last_nom = nom
+        st.session_state.last_nb_crit = nb_criteres_repondus
+        st.rerun()
+
+
+def _form_step_done():
+    """Page de remerciement apres soumission."""
+    nom = st.session_state.get("last_nom", "")
+    score_g = st.session_state.get("last_score")
+    nb_crit = st.session_state.get("last_nb_crit", 0)
+
+    st.markdown(f"""
+    <div class='hero' style='background:linear-gradient(135deg,#2D7A65 0%,#34906F 100%)'>
+        <div class='hero-tag' style='background:rgba(255,255,255,0.2);color:white;border-color:rgba(255,255,255,0.3)'>
+            ✅ Reponse enregistree
+        </div>
+        <h1 class='hero-title'>Merci {nom} !</h1>
+        <p class='hero-subtitle'>
+            Votre evaluation a bien ete enregistree. Vous pouvez fermer cette page.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        score_str = f"{score_g:.2f} / 4" if score_g is not None else "—"
+        st.markdown(
+            f"<div class='kpi'><div class='kpi-val kpi-accent'>{score_str}</div>"
+            f"<div class='kpi-lbl'>Votre score global</div></div>",
+            unsafe_allow_html=True)
+    with c2:
+        st.markdown(
+            f"<div class='kpi'><div class='kpi-val kpi-success'>{nb_crit} / {TOTAL_CRITERES}</div>"
+            f"<div class='kpi-lbl'>Criteres evalues</div></div>",
+            unsafe_allow_html=True)
+
+    qualif_score = qualif(score_g) if score_g is not None else ""
+    if qualif_score:
+        st.markdown(
+            f"<div style='text-align:center;margin:24px 0;font-size:16px;color:#2C3E50'>"
+            f"Niveau : <b style='color:#1F4E79'>{qualif_score}</b>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+    if st.button("Repondre a nouveau (nouvelle reponse)", use_container_width=True):
+        # Reset des cles du formulaire
+        keys_to_clear = [k for k in list(st.session_state.keys())
+                         if k.startswith(("st_", "pr_", "com_", "meta_", "last_"))]
+        for k in keys_to_clear:
+            del st.session_state[k]
+        st.session_state.form_step = 0
+        st.rerun()
+
+
+def page_formulaire():
+    """Dispatcher du formulaire multi-etapes."""
+    # Initialisation de l'etape
+    if "form_step" not in st.session_state:
+        st.session_state.form_step = 0
+
+    step = st.session_state.form_step
+
+    # Page de remerciement
+    if step == "done":
+        _form_step_done()
+        return
+
+    # Stepper en haut (sauf sur page de fin)
+    _stepper(step)
+
+    if step == 0:
+        _form_step_coords()
+    elif step in (1, 2, 3, 4, 5):
+        _form_step_axe(step)
+    elif step == 6:
+        _form_step_recap()
+    else:
+        st.session_state.form_step = 0
+        st.rerun()
 
 
 # ============================================================
@@ -1607,28 +1857,32 @@ def page_dashboard():
         return
 
     # ============================================================
-    # FILTRE PAR ORGANISATION
+    # FILTRE PAR ORGANISATION (defaut = 1ere org, "Toutes" en dernier)
     # ============================================================
     organisations_uniques = sorted(df_all["organisation"].dropna().unique().tolist())
-    OPTION_TOUTES = "🌐 Toutes les organisations"
-    options_filtre = [OPTION_TOUTES] + organisations_uniques
+    OPTION_TOUTES = "🌐 Toutes les organisations (vue agregee)"
+    # Les organisations en premier, "Toutes" a la fin
+    options_filtre = organisations_uniques + [OPTION_TOUTES]
 
     st.markdown(
-        "<div style='background:linear-gradient(135deg,#0F2A47 0%,#1F4E79 100%);"
-        "padding:18px 24px;border-radius:14px;margin-bottom:20px;color:white;'>"
-        "<div style='font-size:11px;font-weight:600;letter-spacing:0.08em;"
-        "color:#E1B660;text-transform:uppercase;margin-bottom:4px'>"
-        "FILTRER PAR ORGANISATION EVALUEE</div>"
-        "<div style='opacity:0.85;font-size:13px'>Choisissez une organisation pour voir "
-        "uniquement ses repondants et ses resultats.</div>"
-        "</div>",
+        f"<div style='background:linear-gradient(135deg,#0F2A47 0%,#1F4E79 100%);"
+        f"padding:22px 28px;border-radius:14px;margin-bottom:8px;color:white;'>"
+        f"<div style='font-size:11px;font-weight:700;letter-spacing:0.08em;"
+        f"color:#E1B660;text-transform:uppercase;margin-bottom:6px'>"
+        f"🏢 ORGANISATION EVALUEE</div>"
+        f"<div style='opacity:0.9;font-size:14px;margin-bottom:4px'>"
+        f"<b>{len(organisations_uniques)} organisation{'s' if len(organisations_uniques) > 1 else ''} "
+        f"disponible{'s' if len(organisations_uniques) > 1 else ''}.</b> "
+        f"Choisissez celle dont vous voulez voir les resultats. "
+        f"Pour comparer, changez juste la selection ci-dessous.</div>"
+        f"</div>",
         unsafe_allow_html=True,
     )
 
     filtre_orga = st.selectbox(
-        "Organisation",
+        "Choisir l'organisation a visualiser",
         options=options_filtre,
-        index=0,
+        index=0,  # Defaut : premiere organisation
         label_visibility="collapsed",
     )
 
